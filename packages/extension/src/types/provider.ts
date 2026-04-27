@@ -34,6 +34,7 @@ export enum ProviderName {
   kadena = 'kadena',
   solana = 'solana',
   massa = 'massa',
+  zekko = 'zekko',
 }
 export enum InternalStorageNamespace {
   keyring = 'KeyRing',
@@ -44,6 +45,7 @@ export enum InternalStorageNamespace {
   bitcoinAccountsState = 'BitcoinAccountsState',
   kadenaAccountsState = 'KadenaAccountsState',
   solanaAccountsState = 'SolanaAccountsState',
+  zekkoAccountsState = 'ZekkoAccountsState',
   activityState = 'ActivityState',
   marketData = 'MarketData',
   cacheFetch = 'CacheFetch',
@@ -71,6 +73,7 @@ export enum ProviderType {
   kadena,
   solana,
   massa,
+  zekko,
 }
 
 export type SendMessageHandler = (

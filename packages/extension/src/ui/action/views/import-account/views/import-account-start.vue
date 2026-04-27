@@ -13,7 +13,8 @@
     <a
       v-if="
         network.provider !== ProviderName.bitcoin &&
-        network.provider !== ProviderName.solana
+        network.provider !== ProviderName.solana &&
+        network.provider !== ProviderName.zekko
       "
       class="import-account-start__button"
       @click="$emit('select:keystore')"

@@ -382,4 +382,51 @@ describe("Keyring create tests", () => {
       expect(deletedAccount).equals(undefined);
     },
   );
+
+  it(
+    "keyring should generate zekko-ed25519 keys",
+    { timeout: 20_000 },
+    async () => {
+      const memStorage = new MemoryStorage();
+      const storage = new Storage("keyring", { storage: memStorage });
+      const keyring = new KeyRing(storage);
+      await keyring.init(password, { mnemonic: MNEMONIC });
+      const keyAdd: KeyRecordAdd = {
+        basePath: "m/44'/1409'/0'/0'",
+        signerType: SignerType.ed25519zek,
+        name: "0index",
+        walletType: WalletType.mnemonic,
+      };
+      await keyring.unlockMnemonic(password);
+      const pair = await keyring.createKey(keyAdd);
+      expect(pair.signerType).equals(SignerType.ed25519zek);
+      expect(pair.pathIndex).equals(0);
+      expect(pair.address).match(/^zk1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+$/);
+    },
+  );
+
+  it(
+    "keyring should generate zekko-ed25519 keys with extra word",
+    { timeout: 20_000 },
+    async () => {
+      const memStorage = new MemoryStorage();
+      const storage = new Storage("keyring", { storage: memStorage });
+      const keyring = new KeyRing(storage);
+      await keyring.init(password, {
+        mnemonic: MNEMONIC,
+        extraWord: EXTRA_WORD,
+      });
+      const keyAdd: KeyRecordAdd = {
+        basePath: "m/44'/1409'/0'/0'",
+        signerType: SignerType.ed25519zek,
+        name: "0index",
+        walletType: WalletType.mnemonic,
+      };
+      await keyring.unlockMnemonic(password);
+      const pair = await keyring.createKey(keyAdd);
+      expect(pair.signerType).equals(SignerType.ed25519zek);
+      expect(pair.pathIndex).equals(0);
+      expect(pair.address).match(/^zk1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+$/);
+    },
+  );
 });

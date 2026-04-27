@@ -15,6 +15,7 @@ import Kadena from '@/providers/kadena/networks/kadena';
 import Solana from '@/providers/solana/networks/solana';
 import MassaNetworks from '@/providers/massa/networks';
 import Massa from '@/providers/massa/networks/mainnet';
+import ZekkoNetworks from '@/providers/zekko/networks';
 
 const providerNetworks: Record<ProviderName, Record<string, BaseNetwork>> = {
   [ProviderName.ethereum]: EthereumNetworks,
@@ -23,6 +24,7 @@ const providerNetworks: Record<ProviderName, Record<string, BaseNetwork>> = {
   [ProviderName.kadena]: KadenaNetworks,
   [ProviderName.solana]: SolanaNetworks,
   [ProviderName.massa]: MassaNetworks,
+  [ProviderName.zekko]: ZekkoNetworks,
   [ProviderName.enkrypt]: {},
 };
 const getAllNetworks = async (
@@ -38,7 +40,8 @@ const getAllNetworks = async (
     .concat(Object.values(BitcoinNetworks) as BaseNetwork[])
     .concat(Object.values(KadenaNetworks) as BaseNetwork[])
     .concat(Object.values(SolanaNetworks) as BaseNetwork[])
-    .concat(Object.values(MassaNetworks) as BaseNetwork[]);
+    .concat(Object.values(MassaNetworks) as BaseNetwork[])
+    .concat(Object.values(ZekkoNetworks) as BaseNetwork[]);
 
   if (!includeCustom) {
     return allNetworks;
@@ -73,6 +76,7 @@ const DEFAULT_BTC_NETWORK_NAME = NetworkNames.Bitcoin;
 const DEFAULT_KADENA_NETWORK_NAME = NetworkNames.Kadena;
 const DEFAULT_SOLANA_NETWORK_NAME = NetworkNames.Solana;
 const DEFAULT_MASSA_NETWORK_NAME = NetworkNames.Massa;
+const DEFAULT_ZEKKO_NETWORK_NAME = NetworkNames.Zekko;
 
 const DEFAULT_EVM_NETWORK = Ethereum;
 const DEFAULT_SUBSTRATE_NETWORK = Polkadot;
@@ -80,12 +84,14 @@ const DEFAULT_BTC_NETWORK = Bitcoin;
 const DEFAULT_KADENA_NETWORK = Kadena;
 const DEFAULT_SOLANA_NETWORK = Solana;
 const DEFAULT_MASSA_NETWORK = Massa;
+const DEFAULT_ZEKKO_NETWORK = ZekkoNetworks.Zekko;
 
 const POPULAR_NAMES = [
   NetworkNames.Bitcoin,
   NetworkNames.Ethereum,
   NetworkNames.Solana,
   NetworkNames.Massa,
+  NetworkNames.Zekko,
   NetworkNames.Matic,
   NetworkNames.Polkadot,
   NetworkNames.Binance,
@@ -110,4 +116,6 @@ export {
   DEFAULT_SOLANA_NETWORK_NAME,
   DEFAULT_MASSA_NETWORK,
   DEFAULT_MASSA_NETWORK_NAME,
+  DEFAULT_ZEKKO_NETWORK,
+  DEFAULT_ZEKKO_NETWORK_NAME,
 };

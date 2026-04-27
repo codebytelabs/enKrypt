@@ -51,6 +51,7 @@ enum SignerType {
   ed25519kda = "ed25519-kda", // kadena
   ed25519sol = "ed25519-sol", // solana
   ed25519mas = "ed25519-mas", // massa
+  ed25519zek = "ed25519-zek", // zekko
 }
 
 interface KeyRecordAdd {

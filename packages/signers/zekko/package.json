@@ -1,7 +1,7 @@
 {
-  "name": "@enkryptcom/keyring",
-  "version": "0.0.4",
-  "description": "Key management for enkrypt extension",
+  "name": "@enkryptcom/signer-zekko",
+  "version": "0.0.1",
+  "description": "Zekko blockchain signer",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -22,21 +22,16 @@
     "node": ">=14.15.0"
   },
   "dependencies": {
-    "@enkryptcom/signer-bitcoin": "workspace:^",
-    "@enkryptcom/signer-ethereum": "workspace:^",
-    "@enkryptcom/signer-kadena": "workspace:^",
-    "@enkryptcom/signer-massa": "workspace:^",
-    "@enkryptcom/signer-polkadot": "workspace:^",
-    "@enkryptcom/signer-zekko": "workspace:^",
-    "@enkryptcom/storage": "workspace:^",
-    "@enkryptcom/types": "workspace:^",
     "@enkryptcom/utils": "workspace:^",
-    "@polkadot/util": "^14.0.3",
-    "assert": "^2.1.0",
-    "bip39": "^3.1.0"
+    "@noble/hashes": "^1.8.0",
+    "bip39": "^3.1.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
-    "@types/node": "^22.19.15",
+    "@enkryptcom/types": "workspace:^",
+    "@polkadot/util-crypto": "^14.0.3",
+    "@types/hdkey": "^2.1.0",
+    "@types/node": "^25.5.0",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
     "eslint": "^9.39.4",
@@ -55,9 +50,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/enkryptcom/enKrypt/tree/main/packages/keyring"
+    "url": "git+https://github.com/enkryptcom/enKrypt/tree/main/packages/signers/zekko"
   },
   "keywords": [],
-  "author": "kvhnuke",
+  "author": "codebytelabs",
   "license": "MIT"
 }

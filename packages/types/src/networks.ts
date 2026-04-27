@@ -99,6 +99,7 @@ export enum NetworkNames {
   Massa = "Massa",
   MassaBuildnet = "MassaBuildnet",
   TAC = "TAC",
+  Zekko = "Zekko",
 }
 
 export enum CoingeckoPlatform {

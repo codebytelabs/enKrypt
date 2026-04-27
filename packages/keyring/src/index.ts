@@ -20,6 +20,7 @@ import { EthereumSigner } from "@enkryptcom/signer-ethereum";
 import { BitcoinSigner } from "@enkryptcom/signer-bitcoin";
 import { KadenaSigner } from "@enkryptcom/signer-kadena";
 import { MassaSigner } from "@enkryptcom/signer-massa";
+import { ZekkoSigner } from "@enkryptcom/signer-zekko";
 import assert from "assert";
 import configs from "./configs";
 import { pathParser } from "./utils";
@@ -53,6 +54,7 @@ class KeyRing {
       [SignerType.ed25519kda]: new KadenaSigner(),
       [SignerType.ed25519sol]: new KadenaSigner(),
       [SignerType.ed25519mas]: new MassaSigner(),
+      [SignerType.ed25519zek]: new ZekkoSigner(),
     };
   }
 
