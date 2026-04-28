@@ -1,20 +1,17 @@
 <template>
   <div class="send-transaction">
     <send-header
-      title="Send ZKO"
-      :network="network"
-      :account-info="accountInfo"
+      :is-send-token="true"
+      :is-nft-available="false"
     />
 
     <div class="send-transaction__content">
       <send-address-input
         v-show="!isOpenSelectContactTo"
         :value="addressTo"
-        label="To"
-        :is-valid="isValidAddressTo"
         placeholder="zk1..."
-        @update:input="(val: string) => (addressTo = val)"
-        @toggle:contact="() => (isOpenSelectContactTo = !isOpenSelectContactTo)"
+        @update:input-address="(val: string) => (addressTo = val)"
+        @toggle:show-contacts="() => (isOpenSelectContactTo = !isOpenSelectContactTo)"
       />
 
       <send-contacts-list
@@ -25,13 +22,13 @@
       />
 
       <send-input-amount
-        :token="selectedToken"
-        :value="amount"
-        :has-error="!!errorMsg"
-        @update:input="(val: string) => (amount = val)"
+        :amount="amount"
+        :has-enough-balance="hasEnoughBalance"
+        :show-max="true"
+        :fiat-value="'0'"
+        @update:input-amount="(val: string) => (amount = val)"
+        @update:input-set-max="setMaxAmount"
       />
-
-      <send-alert v-show="errorMsg" :error-msg="errorMsg" />
 
       <div class="send-transaction__buttons">
         <div class="send-transaction__buttons-cancel">
@@ -52,16 +49,14 @@
 <script setup lang="ts">
 import { ref, computed, PropType } from 'vue';
 import { useRouter } from 'vue-router';
+import BigNumber from 'bignumber.js';
+import type { BaseNetwork } from '@/types/base-network';
+import type { AccountsHeaderData } from '@/ui/action/types/account';
 import SendHeader from '@/providers/common/ui/send-transaction/send-header.vue';
-import SendAddressInput from '@/providers/common/ui/send-transaction/send-address-input.vue';
+import SendAddressInput from './components/send-address-input.vue';
 import SendContactsList from '@/providers/common/ui/send-transaction/send-contacts-list.vue';
 import SendInputAmount from '@/providers/common/ui/send-transaction/send-input-amount.vue';
 import BaseButton from '@action/components/base-button/index.vue';
-import SendAlert from '@/providers/solana/ui/send-transaction/components/send-alert.vue';
-import { AccountsHeaderData } from '@action/types/account';
-import { BaseNetwork } from '@/types/base-network';
-import { fromBase } from '@enkryptcom/utils';
-import BigNumber from 'bignumber.js';
 import { routes as RouterNames } from '@/ui/action/router';
 
 const props = defineProps({
@@ -79,7 +74,17 @@ const router = useRouter();
 const addressTo = ref('');
 const amount = ref<string>('');
 const isOpenSelectContactTo = ref(false);
-const errorMsg = ref('');
+
+const selectedAccountBalance = computed<string>(() => {
+  const accounts = props.accountInfo.activeAccounts || [];
+  const balances = props.accountInfo.activeBalances || [];
+  const selected = props.accountInfo.selectedAccount?.address;
+  if (!selected) return '0';
+  const idx = accounts.findIndex(acc => acc.address === selected);
+  if (idx === -1) return '0';
+  const bal = balances[idx];
+  return !bal || bal === '~' ? '0' : bal;
+});
 
 const selectedToken = computed(() => {
   return {
@@ -87,20 +92,32 @@ const selectedToken = computed(() => {
     symbol: 'ZKO',
     decimals: props.network.decimals || 18,
     icon: props.network.icon,
-    balance: props.accountInfo.activeBalances?.[0] || '0',
-    balancef: props.accountInfo.activeBalances?.[0] || '0',
+    balance: selectedAccountBalance.value,
+    balancef: selectedAccountBalance.value,
   };
 });
 
-const isValidAddressTo = computed(() => {
-  if (!addressTo.value) return true;
-  return addressTo.value.startsWith('zk1');
+const DEFAULT_FEE = '0.001'; // ZKO
+
+const hasEnoughBalance = computed(() => {
+  if (!amount.value) return true;
+  const bal = new BigNumber(selectedToken.value.balance || '0');
+  const amt = new BigNumber(amount.value || '0');
+  const fee = new BigNumber(DEFAULT_FEE);
+  return amt.plus(fee).lte(bal);
 });
+
+const setMaxAmount = () => {
+  const bal = new BigNumber(selectedToken.value.balance || '0');
+  const fee = new BigNumber(DEFAULT_FEE);
+  amount.value = bal.minus(fee).gt(0) ? bal.minus(fee).toString() : '0';
+};
 
 const isInputsValid = computed(() => {
   if (!addressTo.value || !amount.value) return false;
   if (!addressTo.value.startsWith('zk1')) return false;
   if (new BigNumber(amount.value).lte(0)) return false;
+  if (!hasEnoughBalance.value) return false;
   return true;
 });
 
@@ -118,29 +135,33 @@ const close = () => {
 const sendAction = () => {
   if (!isInputsValid.value) return;
 
+  // selectedToken.value.balance is human-readable (decimals applied), so convert input to base units
+  const decimals = props.network.decimals || 18;
   const rawAmount = new BigNumber(amount.value)
-    .times(new BigNumber(10).pow(props.network.decimals || 18))
+    .times(new BigNumber(10).pow(decimals))
     .toFixed(0);
 
-  const params = {
-    from: props.accountInfo.selectedAccount?.address,
-    to: addressTo.value,
-    value: rawAmount,
-    data: '',
-  };
+  const feeRaw = new BigNumber(DEFAULT_FEE)
+    .times(new BigNumber(10).pow(decimals))
+    .toFixed(0);
 
   const txVerifyInfo = {
-    fromAddress: params.from,
-    toAddress: params.to,
+    fromAddress: props.accountInfo.selectedAccount?.address,
+    toAddress: addressTo.value,
     amount: amount.value,
+    fee: DEFAULT_FEE,
     symbol: 'ZKO',
+    rawValue: rawAmount,
+    rawFeeValue: feeRaw,
   };
 
   router.push({
     name: RouterNames.verify.name,
-    params: {
-      id: Buffer.from(JSON.stringify(params)).toString('base64'),
-      txData: Buffer.from(JSON.stringify(txVerifyInfo)).toString('base64'),
+    query: {
+      id: props.network.name,
+      txData: Buffer.from(JSON.stringify(txVerifyInfo), 'utf8').toString(
+        'base64',
+      ),
     },
   });
 };

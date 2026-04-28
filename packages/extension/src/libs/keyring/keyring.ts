@@ -4,6 +4,7 @@ import BrowserStorage from '../common/browser-storage';
 import {
   EnkryptAccount,
   HWWalletAdd,
+  KeyPair,
   KeyPairAdd,
   KeyRecordAdd,
   MnemonicWithExtraWord,
@@ -54,6 +55,9 @@ export class KeyRingBase {
     return this.#keyring
       .sign(hexMessage, options)
       .then((hex: string) => hex as `0x${string}`);
+  }
+  getKeyPair(options: SignOptions): Promise<KeyPair> {
+    return this.#keyring.getKeyPair(options);
   }
   getEthereumEncryptionPublicKey(options: SignOptions): Promise<string> {
     return this.#keyring.getEthereumEncryptionPublicKey(options);

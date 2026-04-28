@@ -3,6 +3,8 @@ import {
   Errors,
   WalletType,
   EnkryptAccount,
+  KeyPair,
+  SignOptions,
 } from '@enkryptcom/types';
 import { KeyRingBase } from './keyring';
 
@@ -122,6 +124,22 @@ class PublicKeyRing {
       throw new Error(Errors.KeyringErrors.AddressDoesntExists);
     }
     return allKeys[address];
+  }
+  /**
+   * Derive the raw KeyPair (private + public key) for an existing account.
+   * Background-only helper for chains whose RPC requires a raw private key
+   * (e.g. Zekko devnet_transfer). Throws if the keyring is locked.
+   */
+  async getKeyPair(address: string): Promise<KeyPair> {
+    const account = await this.getAccount(address);
+    const opts: SignOptions = {
+      basePath: account.basePath,
+      pathIndex: account.pathIndex,
+      signerType: account.signerType,
+      walletType: account.walletType,
+    };
+    const keypair = await this.#keyring.getKeyPair(opts);
+    return { ...keypair, address: account.address };
   }
   isLocked(): boolean {
     return this.#keyring.isLocked();

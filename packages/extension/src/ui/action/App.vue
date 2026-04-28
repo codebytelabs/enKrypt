@@ -116,7 +116,7 @@ import { BaseNetwork } from '@/types/base-network';
 import { InternalMethods } from '@/types/messenger';
 import { EnkryptAccount, NetworkNames } from '@enkryptcom/types';
 import { fromBase } from '@enkryptcom/utils';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Browser from 'webextension-polyfill';
 import AccountsHeader from './components/accounts-header/index.vue';
@@ -161,6 +161,8 @@ const transitionName = 'fade';
 const defaultNetwork = DEFAULT_EVM_NETWORK;
 const currentNetwork = ref<BaseNetwork>(defaultNetwork);
 const currentSubNetwork = ref<string>('');
+const ACTIVE_BALANCE_REFRESH_INTERVAL = 5000;
+let activeBalanceRefreshTimer: ReturnType<typeof setInterval> | null = null;
 const kr = new PublicKeyRing();
 const addNetworkShow = ref(false);
 const settingsShow = ref(false);
@@ -277,38 +279,59 @@ const fetchAndSetRates = async () => {
   );
 };
 
+const refreshActiveBalances = async (
+  network: BaseNetwork = currentNetwork.value,
+  activeAccounts: EnkryptAccount[] = accountHeaderData.value.activeAccounts,
+) => {
+  if (!network.api || !activeAccounts.length) return;
+  try {
+    const thisNetworkName = network.name;
+    const api = await network.api();
+    const balances = await Promise.all(
+      activeAccounts.map(acc => api.getBalance(acc.address)),
+    );
+    if (thisNetworkName === currentNetwork.value.name) {
+      accountHeaderData.value.activeBalances = balances.map(bal =>
+        fromBase(bal, network.decimals),
+      );
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const startActiveBalanceRefresh = () => {
+  if (activeBalanceRefreshTimer) clearInterval(activeBalanceRefreshTimer);
+  activeBalanceRefreshTimer = setInterval(() => {
+    refreshActiveBalances().catch(console.error);
+  }, ACTIVE_BALANCE_REFRESH_INTERVAL);
+};
+
 onMounted(async () => {
   geoRestricted.value = await isGeoRestricted();
   const isInitialized = await kr.isInitialized();
   isWalletInitialized.value = isInitialized;
-  if (geoRestricted.value) return;
+  startActiveBalanceRefresh();
   if (isInitialized) {
-    const _isLocked = await isKeyRingLocked();
-    if (_isLocked) {
-      router
-        .push({ name: 'lock-screen' })
-        .then(() => (isLoading.value = false));
-    } else {
-      init();
-      setTimeout(() => {
-        rateState.showPopup().then(show => {
-          if (show) {
-            toggleRatePopup(true);
-          } else {
-            getLatestEnkryptVersion().then(version => {
-              if (
-                currentVersion &&
-                version &&
-                semverGT(version, currentVersion)
-              ) {
-                latestVersion.value = version;
-                updateShow.value = true;
-              }
-            });
-          }
-        });
-      }, 2000);
-    }
+    await init();
+    setTimeout(() => {
+      rateState.showPopup().then(show => {
+        if (show) {
+          toggleRatePopup(true);
+        } else {
+          getLatestEnkryptVersion().then(version => {
+            if (
+              currentVersion &&
+              version &&
+              semverGT(version, currentVersion)
+            ) {
+              latestVersion.value = version;
+              updateShow.value = true;
+            }
+          });
+        }
+      });
+    }, 2000);
     updatesStore.init();
     menuStore.init();
     fetchAndSetRates();
@@ -317,6 +340,10 @@ onMounted(async () => {
       window.close();
     });
   }
+});
+
+onUnmounted(() => {
+  if (activeBalanceRefreshTimer) clearInterval(activeBalanceRefreshTimer);
 });
 
 /**
@@ -338,7 +365,7 @@ const setNetwork = async (network: BaseNetwork) => {
 
   const selectedAddress = await domainState.getSelectedAddress();
 
-  let selectedAccount = activeAccounts[0];
+  let selectedAccount = activeAccounts[0] || null;
   if (selectedAddress) {
     const found = activeAccounts.find(acc => acc.address === selectedAddress);
     if (found) selectedAccount = found;
@@ -352,8 +379,9 @@ const setNetwork = async (network: BaseNetwork) => {
   };
 
   currentNetwork.value = network;
-  checkAddress(selectedAccount);
+  if (selectedAccount) checkAddress(selectedAccount);
   router.push({ name: 'assets', params: { id: network.name } });
+  refreshActiveBalances(network, activeAccounts).catch(console.error);
   const tabId = await domainState.getCurrentTabId();
   const curSavedNetwork = await domainState.getSelectedNetWork();
 
@@ -418,23 +446,6 @@ const setNetwork = async (network: BaseNetwork) => {
   });
   domainState.setSelectedNetwork(network.name);
 
-  if (network.api) {
-    try {
-      const thisNetworkName = currentNetwork.value.name;
-      const api = await network.api();
-      const activeBalancePromises = activeAccounts.map(acc =>
-        api.getBalance(acc.address),
-      );
-      Promise.all(activeBalancePromises).then(balances => {
-        if (thisNetworkName === currentNetwork.value.name)
-          accountHeaderData.value.activeBalances = balances.map(bal =>
-            fromBase(bal, network.decimals),
-          );
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
 };
 
 const checkAddress = async (activeAccount: EnkryptAccount) => {
@@ -461,6 +472,7 @@ const onSelectedSubnetworkChange = async (id: string) => {
 
 const onSelectedAddressChanged = async (newAccount: EnkryptAccount) => {
   accountHeaderData.value.selectedAccount = newAccount;
+  refreshActiveBalances().catch(console.error);
   await checkAddress(newAccount);
   if (!isAddressRestricted.value.isRestricted) {
     const accountStates = {

@@ -228,6 +228,39 @@ class KeyRing {
     return this.#signers[options.signerType].sign(msgHash, keypair);
   }
 
+  /**
+   * Returns the derived KeyPair (private + public key) for the given options.
+   * Intended for background-only flows that need to construct chain-specific
+   * signed payloads (e.g. Zekko devnet_transfer requires a raw 32-byte ed25519
+   * seed). Behaves like `sign()` but skips the actual signing step.
+   *
+   * Throws if the keyring is locked or the wallet type is hardware.
+   */
+  async getKeyPair(options: SignOptions): Promise<KeyPair> {
+    assert(!this.#isLocked, Errors.KeyringErrors.Locked);
+    this.#resetTimeout();
+    assert(
+      !Object.values(HWwalletType).includes(
+        options.walletType as unknown as HWwalletType,
+      ),
+      Errors.KeyringErrors.CannotUseKeyring,
+    );
+    if (options.walletType === WalletType.privkey) {
+      const pubKey = (await this.getKeysArray()).find(
+        (i) =>
+          i.basePath === options.basePath && i.pathIndex === options.pathIndex,
+      ).publicKey;
+      return {
+        privateKey: this.#privkeys[options.pathIndex.toString()],
+        publicKey: pubKey,
+      };
+    }
+    return this.#signers[options.signerType].generate(
+      this.#mnemonic,
+      pathParser(options.basePath, options.pathIndex, options.signerType),
+    );
+  }
+
   async getEthereumEncryptionPublicKey(options: SignOptions): Promise<string> {
     assert(!this.#isLocked, Errors.KeyringErrors.Locked);
     this.#resetTimeout();

@@ -17,7 +17,7 @@ const method: MiddlewareFunction = async function (
     }
     const api = await (this as any).network.api();
     const bal = await api.getBalance(address);
-    res(null, bal.balance_zek || '0');
+    res(null, bal || '0');
   } catch {
     res(getCustomError('Could not fetch Zekko balance'));
   }

@@ -6,15 +6,21 @@ import { Activity } from '@/types/activity';
 import { BaseToken } from '@/types/base-token';
 import { fromBase } from '@enkryptcom/utils';
 import ZekkoAPI from '../libs/api';
+import ZekkoActivity from '../libs/activity-handlers/zekko';
+import wrapActivityHandler from '@/libs/activity-state/wrap-activity-handler';
 
 export class ZekkoBase extends BaseNetwork {
+  public override identicon = (): string => {
+    return '/assets/zekko-logo.png';
+  };
+
   constructor(options: { name: NetworkNames; node: string; icon: string }) {
     super({
       name: options.name,
       name_long: 'Zekko',
       homePage: 'https://zekko.network',
-      blockExplorerTX: '',
-      blockExplorerAddr: '',
+      blockExplorerTX: 'http://localhost:8080/tx/[[txHash]]',
+      blockExplorerAddr: 'http://localhost:8080/address/[[address]]',
       isTestNetwork: false,
       currencyName: 'ZKO',
       currencyNameLong: 'Zekko',
@@ -39,8 +45,7 @@ export class ZekkoBase extends BaseNetwork {
   async getAllTokenInfo(address: string): Promise<AssetsType[]> {
     try {
       const api = (await this.api()) as unknown as ZekkoAPI;
-      const bal = await api.getBalance(address);
-      const balanceRaw = bal.balance_zek || '0';
+      const balanceRaw = await api.getBalance(address);
       const balanceFormatted = fromBase(balanceRaw, this.decimals);
       return [
         {
@@ -63,7 +68,7 @@ export class ZekkoBase extends BaseNetwork {
     }
   }
 
-  async getAllActivity(_address: string): Promise<Activity[]> {
-    return [];
+  async getAllActivity(address: string): Promise<Activity[]> {
+    return wrapActivityHandler(ZekkoActivity)(this, address);
   }
 }

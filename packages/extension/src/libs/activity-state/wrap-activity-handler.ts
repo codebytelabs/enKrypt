@@ -12,7 +12,7 @@ export default (activityHandler: ActivityHandlerType): ActivityHandlerType => {
       activityState.getAllActivities(options),
       activityState.getCacheTime(options),
     ]);
-    if (cacheTime + CACHE_TTL < new Date().getTime()) {
+    if (!activities.length || cacheTime + CACHE_TTL < new Date().getTime()) {
       const liveActivities = await activityHandler(network, address);
       if (!activities.length) {
         await activityState.addActivities(liveActivities, options);

@@ -6,6 +6,7 @@ import changeNetwork from './change-network';
 import sendToTab from './send-to-tab';
 import newAccount from './new-account';
 import lock from './lock';
+import zekkoDevnetTransfer from './zekko-devnet-transfer';
 export {
   sign,
   getEthereumPubKey,
@@ -15,4 +16,5 @@ export {
   sendToTab,
   newAccount,
   lock,
+  zekkoDevnetTransfer,
 };
